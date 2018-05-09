@@ -136,7 +136,12 @@ pub fn render(
     }
 
     mod_items.push(quote! {
-        impl super::#name_pc {
+        #[doc = #description]
+        pub struct Register {
+            register: ::vcell::VolatileCell<#rty>
+        }
+
+        impl Register {
             #(#reg_impl_items)*
         }
     });
@@ -182,12 +187,32 @@ pub fn render(
         });
     }
 
+    let address = util::hex(peripheral.base_address + register.address_offset);
+
     let mut out = vec![];
     out.push(quote! {
         #[doc = #description]
         pub struct #name_pc {
-            register: ::vcell::VolatileCell<#rty>
+            _marker: ::core::marker::PhantomData<*const ()>
         }
+
+        unsafe impl Send for #name_pc {}
+
+        impl #name_pc {
+            /// Returns a pointer to the register block
+            pub fn ptr() -> *const #name_sc::Register {
+                #address as *const _
+            }
+        }
+
+        impl ::core::ops::Deref for #name_pc {
+            type Target = #name_sc::Register;
+
+            fn deref(&self) -> &#name_sc::Register {
+                unsafe { &*Self::ptr() }
+            }
+        }
+
 
         #[doc = #description]
         pub mod #name_sc {

@@ -843,7 +843,9 @@ fn convert_svd_register(register: &Register, name: Option<&str>) -> syn::Field {
                     + &name.to_sanitized_upper_case(),
             )
         } else {
-            name.to_sanitized_upper_case()
+            let mut name = name.to_sanitized_snake_case();
+            name.to_mut().extend("::Register".chars());
+            name
         };
 
         syn::Ty::Path(
